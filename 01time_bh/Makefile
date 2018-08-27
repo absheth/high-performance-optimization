@@ -1,5 +1,5 @@
 CC = gcc
-CCFLAGS = -O3 -fomit-frame-pointer
+CCFLAGS = -O0 -fomit-frame-pointer -DUSEWALL
 TIMEDEF =
 
 OBJ = dottime.o ddot.o
@@ -11,5 +11,6 @@ ddot.o : ddot.c
 	$(CC) $(CCFLAGS) -c ddot.c
 clean :
 	rm -f $(OBJ)
-kill : 
+	rm -f xdottime
+kill :
 	rm -f xdottime $(OBJ)
