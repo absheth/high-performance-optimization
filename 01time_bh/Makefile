@@ -1,6 +1,6 @@
 CC = gcc
-CCFLAGS = -O0 -fomit-frame-pointer -DUSEWALL
-TIMEDEF =
+CCFLAGS = -O3 -fomit-frame-pointer
+TIMEDEF = -DUSEWALL
 
 OBJ = dottime.o ddot.o
 xdottime: $(OBJ)
