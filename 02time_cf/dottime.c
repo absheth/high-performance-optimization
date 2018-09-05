@@ -20,31 +20,30 @@
 #include <sys/resource.h>
 #endif
 
-
 /*
- * RETURNS: elapsed time (in seconds) since arbitrary starting point, using a
+ * RETURNS: elapsed time (in microseconds) since arbitrary starting point, using a
  * variety of system clocks, as selected by macros
  */
-long long my_time()
-{
+long long my_time() {
     /*
      * Wall timers
      */
 #ifdef USEWALL /* standard unix walltime - gettimeofday */
 
-    struct timeval w_time;
-    gettimeofday(&w_time, NULL);
 #ifdef PentiumMhz
-    // fprintf(stdout, "PentiumMHZ - Set \n");
+    // fprintf(stdout, "PentiumMhz - Set %f \n", PentiumMhz);
     long long GetCycleCount(void);
     long long value = GetCycleCount();
 
+    // fprintf(stdout, "Value: %lld \n", value);
+    value = (value / PentiumMhz); // microseconds
     // fprintf(stdout, "Value: %lld \n", value);
 
     return(value);
 #else
     // fprintf(stdout, "PentiumMHZ - Not set \n");
-    // return(w_time.tv_sec + w_time.tv_usec*1.0e-6);
+    struct timeval w_time;
+    gettimeofday(&w_time, NULL);
     long long lret;
     lret = w_time.tv_sec;
     lret *= 1000000;
@@ -65,9 +64,7 @@ long long my_time()
 /*
  * RETURNS: random double precision number in range [-0.5, 0.5]
  */
-double my_drand()
-
-{
+double my_drand() {
     long ll;
     double dr;
     ll = random();                            /* get random integer */
@@ -79,8 +76,6 @@ double my_drand()
  * Return seconds
  */
 double ClickToSec(long long clicks) {
-    
-    fprintf(stdout, "Clicks: %lld \n", clicks);
     return(clicks*1.0e-6);
 }
 
@@ -89,15 +84,13 @@ double ClickToSec(long long clicks) {
  * mflop MFLOPS (mflop is inflated to avoid clock resolution errors).
  * RETURNS: elapsed time (in seconds) for average call to ddot().
  */
-double DoTime(int n, double mflop)
-
-{
+double DoTime(int n, double mflop, int cache_size) {
     double ddot(int N, double *X, double *Y);
     double dot = 0.0, *X, *Y;
     long long t0, t1;
     int i, nrep;
 
-    nrep = (mflop * 1000000.0 + 2*n-1) / (1.0 * 2*n);
+    nrep = (mflop * 1000000.0 + 2*n-1) / (2.0*n); // Check
     fprintf(stdout, "For nrep: %d \n", nrep);
     if (nrep < 1) {
         nrep = 1;
@@ -112,22 +105,22 @@ double DoTime(int n, double mflop)
     }
 
     t0 = my_time();
-    
-    fprintf(stdout, "Time t0 : %lld \n", t0);
+
+    // fprintf(stdout, "Time t0 : %lld \n", t0);
     for (i = 0; i < nrep; i++) {
-        dot = ddot(n, X, Y);
+        dot += ddot(n, X, Y);
         dot = -dot;
     }
     // sleep(1); // Trial
     t1 = my_time();
-    fprintf(stdout, "Time t1 : %lld \n", t1);
-    fprintf(stdout, "Time difference: %lld \n", t1-t0);
-    fprintf(stdout, "Time to be returned: %lf \n", (t1-t0)*1.0e-6);
+    // fprintf(stdout, "Time t1 : %lld \n", t1);
+    // fprintf(stdout, "Time difference: %lld \n", t1-t0);
+    // fprintf(stdout, "Time to be returned: %e \n", ((t1-t0)*1.0e-6)/(1.0*nrep));
     // Release the memory
     free(X);
     free(Y);
     // return (t1 / (nrep * 1.0)); // returns average time
-    return (ClickToSec(t1-t0)); // returns average time
+    return (ClickToSec(t1-t0)/(1.0*nrep));
 }
 
 /*
@@ -142,7 +135,7 @@ void PrintUsage(char *name) {
  * Get flags from user and/or set defaults
  */
 void GetFlags(int nargs, char **args, int *N0, int *NN, int *Ninc, int *mflop, int *cache_size, int *nsample) {
-    
+
     fprintf(stdout, "nargs: %d \n", nargs);
     int i;
     /*
@@ -190,7 +183,7 @@ void GetFlags(int nargs, char **args, int *N0, int *NN, int *Ninc, int *mflop, i
             case 'S':
                 if (++i == nargs)
                     PrintUsage(args[0]);
-                *nsample= atoi(args[i]); 
+                *nsample= atoi(args[i]);
                 break;
             default:
                 fprintf(stderr, "\nUNKNOWN FLAG (ARG %d) : '%s'!\n", i, args[i]);
@@ -199,34 +192,50 @@ void GetFlags(int nargs, char **args, int *N0, int *NN, int *Ninc, int *mflop, i
     }
 }
 
-
 // Main method
 int main(int nargs, char **args) {
-    int N0, NN, Ninc, i, mflop, cache_size, nsample;
-    double tim, mf;
-
+    int N0, NN, Ninc, i, j, mflop, cache_size, nsample;
     /*
      * Get timing range, and print header
      */
     GetFlags(nargs, args, &N0, &NN, &Ninc, &mflop, &cache_size, &nsample);
     fprintf(stdout,
-            "\nTIMING VECTOR PRODUCTS IN RANGE [%d,%d:%d]; FORCED MFLOP=%d; CACHE SIZE: %d; NSAMPLE: %d\n;",
+            "\nTIMING VECTOR PRODUCTS IN RANGE [%d,%d:%d]; FORCED MFLOP=%d; CACHE SIZE: %d; NSAMPLE: %d;\n",
             N0, NN, Ninc, mflop, cache_size, nsample);
-    exit(0);    
-    /*
-     * Loop over all cases to be timed
-     */
-    for (i=N0; i <= NN; i += Ninc)
+    
+    double tim, mf;
+    
+    for (i = N0; i <= NN; i += Ninc)
     {
-        tim = DoTime(i, mflop);
         
-        fprintf(stdout, "Time returned: %lf \n", tim);
+        double *time_array;
+        
+        // Allocate memory for n samples.
+        time_array = (double *) malloc(nsample * sizeof(double));
+
+        for (j = 0; j < nsample; j++) {
+            fprintf(stdout, "Sample: %d \n", j+1);
+            time_array[j] = DoTime(i, mflop, cache_size);
+            // fprintf(stdout, "******************\n");
+            // fprintf(stdout, "\n");
+        }
+
+        // tim = GetGoodTime(nsample, time_array);
+        tim = time_array[0];
+
+        // fprintf(stdout, "Time returned: %e \n", tim);
         mf = (2.0*i) / (tim*1000000.0);
         fprintf(stdout, "   N=%8d, time=%e, MFLOPS=%.2f\n", i, tim, mf);
+        
         fprintf(stdout, "---------------------------------------\n");
         fprintf(stdout, "\n");
 
     }
     fprintf(stdout, "DONE\n");
+    
+    
+    
+    
+
     return(0);
 }
