@@ -79,6 +79,68 @@ double ClickToSec(long long clicks) {
     return(clicks*1.0e-6);
 }
 
+// A comparator function used by qsort
+// Ref : https://www.geeksforgeeks.org/c-qsort-vs-c-sort/
+// int compare(const void * a, const void * b)
+// {
+//     return ( *(double*)a - *(double*)b );
+// }
+int compare (const void * a, const void * b)
+{
+    if (*(double*)a > *(double*)b) return 1;
+    else if (*(double*)a < *(double*)b) return -1;
+    else return 0;  
+}
+double GetGoodTime( int Nt, double *time) {
+    fprintf(stdout, "\n");
+    fprintf(stdout, "Sorting \n");
+    int i;
+    for (i = 0; i < Nt; i++) {
+       fprintf(stdout, "%e, ", time[i]);
+    }
+
+    fprintf(stdout, "\n");
+    fprintf(stdout, "\n");
+
+
+    qsort(time, Nt, sizeof(double), compare);
+    for (i = 0; i < Nt; i++) {
+        fprintf(stdout, "%e, ", time[i]);
+    }
+    
+    fprintf(stdout, "\n");
+
+    //  
+#ifdef USEWALL /* standard unix walltime - gettimeofday */
+
+    
+    fprintf(stdout, "Return index: 0 -->  %e \n ", time[0]);
+    
+    return time[0];
+
+#else
+    int return_index = Nt/2;
+    
+    if (return_index == 0) {
+        return_index = 1;
+    }
+
+    if (Nt&1) {
+        
+        fprintf(stdout, "Return index: %d \n", return_index-1);
+        return time[return_index-1];
+        
+    } else {
+        
+        fprintf(stdout, "Return average: %d and %d \n", return_index-1, return_index );
+        return ((time[return_index-1] +  time[return_index])*0.5);
+    }
+    
+#endif
+
+
+}
+
 /*
  * Times as many N-length dot product calls as necessary to produce
  * mflop MFLOPS (mflop is inflated to avoid clock resolution errors).
@@ -90,8 +152,8 @@ double DoTime(int n, double mflop, int cache_size) {
     long long t0, t1;
     int i, nrep;
 
-    nrep = (mflop * 1000000.0 + 2*n-1) / (2.0*n); // Check
-    fprintf(stdout, "For nrep: %d \n", nrep);
+    nrep = (mflop*1000000.0 + 2*n-1) / (2.0*n); // Check
+    // fprintf(stdout, "For nrep: %d \n", nrep);
     if (nrep < 1) {
         nrep = 1;
     }
@@ -184,6 +246,9 @@ void GetFlags(int nargs, char **args, int *N0, int *NN, int *Ninc, int *mflop, i
                 if (++i == nargs)
                     PrintUsage(args[0]);
                 *nsample= atoi(args[i]);
+                if (*nsample == 0) {
+                    *nsample = 1;
+                }
                 break;
             default:
                 fprintf(stderr, "\nUNKNOWN FLAG (ARG %d) : '%s'!\n", i, args[i]);
@@ -202,14 +267,14 @@ int main(int nargs, char **args) {
     fprintf(stdout,
             "\nTIMING VECTOR PRODUCTS IN RANGE [%d,%d:%d]; FORCED MFLOP=%d; CACHE SIZE: %d; NSAMPLE: %d;\n",
             N0, NN, Ninc, mflop, cache_size, nsample);
-    
+
     double tim, mf;
-    
+
     for (i = N0; i <= NN; i += Ninc)
     {
-        
+
         double *time_array;
-        
+
         // Allocate memory for n samples.
         time_array = (double *) malloc(nsample * sizeof(double));
 
@@ -220,22 +285,22 @@ int main(int nargs, char **args) {
             // fprintf(stdout, "\n");
         }
 
-        // tim = GetGoodTime(nsample, time_array);
-        tim = time_array[0];
+        tim = GetGoodTime(nsample, time_array);
+        // tim = time_array[0];
 
         // fprintf(stdout, "Time returned: %e \n", tim);
         mf = (2.0*i) / (tim*1000000.0);
         fprintf(stdout, "   N=%8d, time=%e, MFLOPS=%.2f\n", i, tim, mf);
-        
+
         fprintf(stdout, "---------------------------------------\n");
         fprintf(stdout, "\n");
-
+        free(time_array);
     }
     fprintf(stdout, "DONE\n");
-    
-    
-    
-    
+
+
+
+
 
     return(0);
 }
