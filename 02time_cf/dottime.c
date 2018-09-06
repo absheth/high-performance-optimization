@@ -149,9 +149,31 @@ double GetGoodTime( int Nt, double *time) {
  */
 double DoTime(int n, double mflop, int cache_size) {
     double ddot(int N, double *X, double *Y);
-    double dot = 0.0, *X, *Y;
+    double dot = 0.0, *X, *Y, *vp, *x, *y;
     long long t0, t1;
     int i, nrep;
+    int cs = cache_size * (1024/sizeof(double));
+    int setsz = 2*n;
+    int nset = (cs + setsz-1)/setsz;
+    if (nset < 1) {
+        nset = 1;    
+    }
+    int total_elements = nset * setsz;
+    fprintf(stdout, "cs: %d \n", cs); 
+    fprintf(stdout, "n: %d \n", n); 
+    fprintf(stdout, "setz: %d \n", setsz); 
+    fprintf(stdout, "nset: %d \n", nset); 
+    fprintf(stdout, "total_elements: %d \n", total_elements); 
+    fprintf(stdout, "\n");
+    // Allocate memory and populate the vectors
+    // Y = X = vp = (double *) malloc(total_elements * sizeof(double));
+    // X += total_elements - setsz;
+    // Y = X + n;
+
+    // for (x=vp, i=Nt-1 ; i >= 0; i--) {
+    //     X[i] = my_drand();
+    //     Y[i] = my_drand();
+    // }
 
     nrep = (mflop*1000000.0 + 2*n-1) / (2.0*n); // Check
     // fprintf(stdout, "For nrep: %d \n", nrep);

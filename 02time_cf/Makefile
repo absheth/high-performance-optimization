@@ -1,7 +1,7 @@
 CC = gcc
 CCFLAGS = -O3 -fomit-frame-pointer
 TIMEDEF = -DUSEWALL
-MHZ = # -DPentiumMhz=3492.128
+MHZ = -DPentiumMhz=3492.128
 OBJ = dottime.o ddot.o GetCycleCount.o
 xdottime: $(OBJ)
 	$(CC) $(CCFLAGS) -o $@ $(OBJ)
