@@ -36,7 +36,7 @@ long long my_time() {
     long long value = GetCycleCount();
 
     // fprintf(stdout, "Value: %lld \n", value);
-    value = (value / PentiumMhz); // microseconds
+    // value = (value / PentiumMhz); // microseconds
     // fprintf(stdout, "Value: %lld \n", value);
 
     return(value);
@@ -76,6 +76,12 @@ double my_drand() {
  * Return seconds
  */
 double ClickToSec(long long clicks) {
+
+#if defined(USEWALL) && defined (PentiumMhz)  
+    // fprintf(stdout, "-- Dividing -- \n");
+    return((clicks/PentiumMhz)*1.0e-6);
+#endif
+    // fprintf(stdout, "-- Not dividing -- \n");
     return(clicks*1.0e-6);
 }
 
@@ -89,7 +95,7 @@ int compare (const void * a, const void * b)
 {
     if (*(double*)a > *(double*)b) return 1;
     else if (*(double*)a < *(double*)b) return -1;
-    else return 0;  
+    else return 0;
 }
 double GetGoodTime( int Nt, double *time) {
     fprintf(stdout, "\n");
@@ -107,38 +113,33 @@ double GetGoodTime( int Nt, double *time) {
     for (i = 0; i < Nt; i++) {
         fprintf(stdout, "%e, ", time[i]);
     }
-    
+
     fprintf(stdout, "\n");
 
-    //  
-#ifdef USEWALL /* standard unix walltime - gettimeofday */
-
-    
-    fprintf(stdout, "Return index: 0 -->  %e \n ", time[0]);
-    
+    //
+#if defined (USEWALL) /* standard unix walltime - gettimeofday */
+    fprintf(stdout, "Returning lowest time: -->  %e \n ", time[0]);
     return time[0];
-
-#else
+#endif
     int return_index = Nt/2;
-    
+
     if (return_index == 0) {
         return_index = 1;
     }
 
     if (Nt&1) {
-        
-        fprintf(stdout, "Return index: %d \n", return_index-1);
-        return time[return_index-1];
-        
+        if (Nt == 1) {
+            fprintf(stdout, "Median | Return index: %d \n", return_index-1);
+            return time[return_index-1];
+        }
+        fprintf(stdout, "Median | Return index: %d \n", return_index);
+        return time[return_index];
+
     } else {
-        
-        fprintf(stdout, "Return average: %d and %d \n", return_index-1, return_index );
+
+        fprintf(stdout, "Median | Return average: %d and %d \n", return_index-1, return_index );
         return ((time[return_index-1] +  time[return_index])*0.5);
     }
-    
-#endif
-
-
 }
 
 /*
@@ -279,7 +280,7 @@ int main(int nargs, char **args) {
         time_array = (double *) malloc(nsample * sizeof(double));
 
         for (j = 0; j < nsample; j++) {
-            fprintf(stdout, "Sample: %d \n", j+1);
+            // fprintf(stdout, "Sample: %d \n", j+1);
             time_array[j] = DoTime(i, mflop, cache_size);
             // fprintf(stdout, "******************\n");
             // fprintf(stdout, "\n");
