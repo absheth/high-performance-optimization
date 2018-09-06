@@ -98,19 +98,21 @@ int compare (const void * a, const void * b)
     else return 0;
 }
 double GetGoodTime( int Nt, double *time) {
-    // fprintf(stdout, "\n");
-    // fprintf(stdout, "Sorting \n");
+    
     int i;
-    // for (i = 0; i < Nt; i++) {
-    //    fprintf(stdout, "%e, ", time[i]);
-    // }
-
     // fprintf(stdout, "\n");
-    qsort(time, Nt, sizeof(double), compare);
+    // fprintf(stdout, "Before sorting: ");
     // for (i = 0; i < Nt; i++) {
     //     fprintf(stdout, "%e, ", time[i]);
     // }
+    // fprintf(stdout, "\n");
 
+    qsort(time, Nt, sizeof(double), compare);
+
+    // fprintf(stdout, "After sorting: ");
+    // for (i = 0; i < Nt; i++) {
+    //     fprintf(stdout, "%e, ", time[i]);
+    // }
     // fprintf(stdout, "\n");
 
     //
@@ -146,73 +148,90 @@ double GetGoodTime( int Nt, double *time) {
  */
 double DoTime(int n, double mflop, int cache_size) {
     double ddot(int N, double *X, double *Y);
-    double dot = 0.0, *X, *Y, *vp, *x, *y;
+    double dot = 0.0, *X, *Y, *alloc_start, *iter_x, *iter_y;
     long long t0, t1;
     int i, nrep;
-    int cache_flush_size = cache_size * (1024/sizeof(double));
-    int set_size = n+n;
-    int nset = (cache_flush_size + set_size-1)/set_size;
-    if (nset < 1) {
-        nset = 1;
-    }
-    int total_elements = nset * set_size;
-    // fprintf(stdout, "cache_flush_size: %d \n", cache_flush_size);
-    // fprintf(stdout, "n: %d \n", n);
-    // fprintf(stdout, "set_size: %d \n", set_size);
-    // fprintf(stdout, "nset: %d \n", nset);
-    // fprintf(stdout, "total_elements: %d \n", total_elements);
-    // fprintf(stdout, "\n");
 
-    // fprintf(stdout, "HERE\n");
-    // Allocate memory and populate the vectors
-    X = vp = (double *) malloc(sizeof(double) * total_elements);
-    X += total_elements - set_size;
-    Y = X + n;
-
-    for (x=vp, i=total_elements-1 ; i >= 0; i--) {
-        x[i] = my_drand();
-    }
-
-    nrep = (mflop*1000000.0 + 2*n-1) / (2.0*n); // Check
+    nrep = (mflop*1000000.0 + 2*n-1) / (2.0*n);
     // fprintf(stdout, "For nrep: %d \n", nrep);
     if (nrep < 1) {
         nrep = 1;
     }
 
-    // Allocate memory and populate the vectors
-    // X = (double *) malloc(n * sizeof(double));
-    // Y = (double *) malloc(n * sizeof(double));
-    // for (i = 0; i < n; ++i) {
-    //     X[i] = my_drand();
-    //     Y[i] = my_drand();
-    // }
-    x=X; y=Y;
-    int k = 0;
-    t0 = my_time();
-
-    // fprintf(stdout, "Time t0 : %lld \n", t0);
-    for (i = 0; i < nrep; i++) {
-
-        dot += ddot(n, x, y);
-        dot = -dot;
-        if (++k != nset) {
-            x -= set_size;
-            y -= set_size;
-
-        } else {
-            x=X;
-            y=Y;
-            k=0;
+    if(cache_size != 0) {
+        //Cache flushing
+        int cache_flush_size = cache_size * (1024/sizeof(double));
+        int set_size = n+n; // Total number of operands in a set
+        int nset = (cache_flush_size + set_size-1)/set_size; // Get the ceiling
+        if (nset < 1) {
+            nset = 1;
         }
+        int total_elements = nset * set_size;
+        // fprintf(stdout, "cache_flush_size: %d \n", cache_flush_size);
+        // fprintf(stdout, "n: %d \n", n);
+        // fprintf(stdout, "set_size: %d \n", set_size);
+        // fprintf(stdout, "nset: %d \n", nset);
+        // fprintf(stdout, "total_elements: %d \n", total_elements);
+        // fprintf(stdout, "\n");
+
+        // fprintf(stdout, "HERE\n");
+        // Allocate memory and populate the vectors
+        alloc_start = (double *) malloc(sizeof(double) * total_elements);
+
+        // split the vectors
+        X = alloc_start + total_elements - set_size;
+        Y = X + n;
+
+        for (iter_x=alloc_start, i=total_elements-1 ; i >= 0; i--) {
+            iter_x[i] = my_drand();
+        }
+
+
+        iter_x=X; iter_y=Y;
+        int move_around = 0;
+
+        t0 = my_time(); // start timer
+        for (i = 0; i < nrep; i++) {
+
+            dot += ddot(n, iter_x, iter_y);
+            dot = -dot;
+            if (++move_around != nset) {
+                iter_x -= set_size; // change the pointing
+                iter_y -= set_size; // change the pointing
+
+            } else {
+                iter_x=X;
+                iter_y=Y;
+                move_around=0;
+                // fprintf(stdout, "arounding off\n");
+            }
+        }
+        t1 = my_time(); // stop timer
+
+        // Release the memory
+        // free(X);
+        free(alloc_start);
+    } else {
+
+        // Allocate memory and populate the vectors
+        X = (double *) malloc(n * sizeof(double));
+        Y = (double *) malloc(n * sizeof(double));
+        for (i = 0; i < n; ++i) {
+            X[i] = my_drand();
+            Y[i] = my_drand();
+        }
+
+        t0 = my_time(); // start timer
+        for (i = 0; i < nrep; i++) {
+            dot += ddot(n, X, Y);
+            dot = -dot;
+        }
+        t1 = my_time(); // stop timer
+
+        // Release the memory
+        free(X);
+        free(Y);
     }
-    // sleep(1); // Trial
-    t1 = my_time();
-    // fprintf(stdout, "Time t1 : %lld \n", t1);
-    // fprintf(stdout, "Time difference: %lld \n", t1-t0);
-    // fprintf(stdout, "Time to be returned: %e \n", ((t1-t0)*1.0e-6)/(1.0*nrep));
-    // Release the memory
-    // free(X);
-    free(vp);
     // return (t1 / (nrep * 1.0)); // returns average time
     return (ClickToSec(t1-t0)/(1.0*nrep));
 }
@@ -230,7 +249,7 @@ void PrintUsage(char *name) {
  */
 void GetFlags(int nargs, char **args, int *N0, int *NN, int *Ninc, int *mflop, int *cache_size, int *nsample) {
 
-    fprintf(stdout, "nargs: %d \n", nargs);
+    // fprintf(stdout, "nargs: %d \n", nargs);
     int i;
     /*
      * Set defaults
@@ -248,7 +267,6 @@ void GetFlags(int nargs, char **args, int *N0, int *NN, int *Ninc, int *mflop, i
     {
         if (args[i][0] != '-' || i == nargs-1)
             PrintUsage(args[0]);
-        fprintf(stdout, "i: %d \n", i);
         switch(args[i][1])
         {
             case 'm':
