@@ -1,0 +1,9 @@
+rate = cycle/seconds
+
+seconds = cycle/rate
+
+= x count / rate in hertz 
+= x / 3492.128 *1.0*e-6
+
+
+200000000

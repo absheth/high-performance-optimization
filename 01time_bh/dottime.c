@@ -33,7 +33,7 @@ double my_time()
 
     struct timeval w_time;
     gettimeofday(&w_time, NULL);
-    return(w_time.tv_sec + w_time.tv_usec/1000000.0);
+    return(w_time.tv_sec + w_time.tv_usec*1.0e-6);
 
 #else /* standard unix cputime - getrusage */
 
@@ -70,8 +70,8 @@ double DoTime(int n, double mflop)
     double dot = 0.0, t0, t1, *X, *Y;
     int i, nrep;
 
-    nrep = (mflop * 1000000.0 + n-1) / (1.0 * n);
-    fprintf(stdout, "For nrep: %d \n", nrep);
+    nrep = (mflop * 1000000.0 + 2*n-1) / (1.0 * 2*n);
+    // fprintf(stdout, "For nrep: %d \n", nrep);
     if (nrep < 1) {
         nrep = 1;
     }
@@ -86,7 +86,8 @@ double DoTime(int n, double mflop)
 
     t0 = my_time();
     for (i = 0; i < nrep; i++) {
-        dot = ddot(n, X, Y);
+        dot += ddot(n, X, Y);
+        dot = -dot;
     }
     // sleep(1); // Trial
     t1 = my_time() - t0;

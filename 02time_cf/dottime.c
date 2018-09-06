@@ -77,7 +77,7 @@ double my_drand() {
  */
 double ClickToSec(long long clicks) {
 
-#if defined(USEWALL) && defined (PentiumMhz)  
+#if defined(USEWALL) && defined (PentiumMhz)
     // fprintf(stdout, "-- Dividing -- \n");
     return((clicks/PentiumMhz)*1.0e-6);
 #endif
@@ -98,27 +98,24 @@ int compare (const void * a, const void * b)
     else return 0;
 }
 double GetGoodTime( int Nt, double *time) {
-    fprintf(stdout, "\n");
-    fprintf(stdout, "Sorting \n");
+    // fprintf(stdout, "\n");
+    // fprintf(stdout, "Sorting \n");
     int i;
-    for (i = 0; i < Nt; i++) {
-       fprintf(stdout, "%e, ", time[i]);
-    }
+    // for (i = 0; i < Nt; i++) {
+    //    fprintf(stdout, "%e, ", time[i]);
+    // }
 
-    fprintf(stdout, "\n");
-    fprintf(stdout, "\n");
-
-
+    // fprintf(stdout, "\n");
     qsort(time, Nt, sizeof(double), compare);
-    for (i = 0; i < Nt; i++) {
-        fprintf(stdout, "%e, ", time[i]);
-    }
+    // for (i = 0; i < Nt; i++) {
+    //     fprintf(stdout, "%e, ", time[i]);
+    // }
 
-    fprintf(stdout, "\n");
+    // fprintf(stdout, "\n");
 
     //
 #if defined (USEWALL) /* standard unix walltime - gettimeofday */
-    fprintf(stdout, "Returning lowest time: -->  %e \n ", time[0]);
+    // fprintf(stdout, "Returning lowest time: -->  %e \n ", time[0]);
     return time[0];
 #endif
     int return_index = Nt/2;
@@ -129,15 +126,15 @@ double GetGoodTime( int Nt, double *time) {
 
     if (Nt&1) {
         if (Nt == 1) {
-            fprintf(stdout, "Median | Return index: %d \n", return_index-1);
+            // fprintf(stdout, "Median | Return index: %d \n", return_index-1);
             return time[return_index-1];
         }
-        fprintf(stdout, "Median | Return index: %d \n", return_index);
+        // fprintf(stdout, "Median | Return index: %d \n", return_index);
         return time[return_index];
 
     } else {
 
-        fprintf(stdout, "Median | Return average: %d and %d \n", return_index-1, return_index );
+        // fprintf(stdout, "Median | Return average: %d and %d \n", return_index-1, return_index );
         return ((time[return_index-1] +  time[return_index])*0.5);
     }
 }
@@ -152,28 +149,29 @@ double DoTime(int n, double mflop, int cache_size) {
     double dot = 0.0, *X, *Y, *vp, *x, *y;
     long long t0, t1;
     int i, nrep;
-    int cs = cache_size * (1024/sizeof(double));
-    int setsz = 2*n;
-    int nset = (cs + setsz-1)/setsz;
+    int cache_flush_size = cache_size * (1024/sizeof(double));
+    int set_size = n+n;
+    int nset = (cache_flush_size + set_size-1)/set_size;
     if (nset < 1) {
-        nset = 1;    
+        nset = 1;
     }
-    int total_elements = nset * setsz;
-    fprintf(stdout, "cs: %d \n", cs); 
-    fprintf(stdout, "n: %d \n", n); 
-    fprintf(stdout, "setz: %d \n", setsz); 
-    fprintf(stdout, "nset: %d \n", nset); 
-    fprintf(stdout, "total_elements: %d \n", total_elements); 
-    fprintf(stdout, "\n");
-    // Allocate memory and populate the vectors
-    // Y = X = vp = (double *) malloc(total_elements * sizeof(double));
-    // X += total_elements - setsz;
-    // Y = X + n;
+    int total_elements = nset * set_size;
+    // fprintf(stdout, "cache_flush_size: %d \n", cache_flush_size);
+    // fprintf(stdout, "n: %d \n", n);
+    // fprintf(stdout, "set_size: %d \n", set_size);
+    // fprintf(stdout, "nset: %d \n", nset);
+    // fprintf(stdout, "total_elements: %d \n", total_elements);
+    // fprintf(stdout, "\n");
 
-    // for (x=vp, i=Nt-1 ; i >= 0; i--) {
-    //     X[i] = my_drand();
-    //     Y[i] = my_drand();
-    // }
+    // fprintf(stdout, "HERE\n");
+    // Allocate memory and populate the vectors
+    X = vp = (double *) malloc(sizeof(double) * total_elements);
+    X += total_elements - set_size;
+    Y = X + n;
+
+    for (x=vp, i=total_elements-1 ; i >= 0; i--) {
+        x[i] = my_drand();
+    }
 
     nrep = (mflop*1000000.0 + 2*n-1) / (2.0*n); // Check
     // fprintf(stdout, "For nrep: %d \n", nrep);
@@ -182,19 +180,30 @@ double DoTime(int n, double mflop, int cache_size) {
     }
 
     // Allocate memory and populate the vectors
-    X = (double *) malloc(n * sizeof(double));
-    Y = (double *) malloc(n * sizeof(double));
-    for (i = 0; i < n; ++i) {
-        X[i] = my_drand();
-        Y[i] = my_drand();
-    }
-
+    // X = (double *) malloc(n * sizeof(double));
+    // Y = (double *) malloc(n * sizeof(double));
+    // for (i = 0; i < n; ++i) {
+    //     X[i] = my_drand();
+    //     Y[i] = my_drand();
+    // }
+    x=X; y=Y;
+    int k = 0;
     t0 = my_time();
 
     // fprintf(stdout, "Time t0 : %lld \n", t0);
     for (i = 0; i < nrep; i++) {
-        dot += ddot(n, X, Y);
+
+        dot += ddot(n, x, y);
         dot = -dot;
+        if (++k != nset) {
+            x -= set_size;
+            y -= set_size;
+
+        } else {
+            x=X;
+            y=Y;
+            k=0;
+        }
     }
     // sleep(1); // Trial
     t1 = my_time();
@@ -202,8 +211,8 @@ double DoTime(int n, double mflop, int cache_size) {
     // fprintf(stdout, "Time difference: %lld \n", t1-t0);
     // fprintf(stdout, "Time to be returned: %e \n", ((t1-t0)*1.0e-6)/(1.0*nrep));
     // Release the memory
-    free(X);
-    free(Y);
+    // free(X);
+    free(vp);
     // return (t1 / (nrep * 1.0)); // returns average time
     return (ClickToSec(t1-t0)/(1.0*nrep));
 }
@@ -295,35 +304,24 @@ int main(int nargs, char **args) {
 
     for (i = N0; i <= NN; i += Ninc)
     {
-
         double *time_array;
 
         // Allocate memory for n samples.
         time_array = (double *) malloc(nsample * sizeof(double));
 
         for (j = 0; j < nsample; j++) {
-            // fprintf(stdout, "Sample: %d \n", j+1);
+            //  fprintf(stdout, "Sample: %d \n", j+1);
             time_array[j] = DoTime(i, mflop, cache_size);
-            // fprintf(stdout, "******************\n");
-            // fprintf(stdout, "\n");
         }
 
         tim = GetGoodTime(nsample, time_array);
-        // tim = time_array[0];
-
-        // fprintf(stdout, "Time returned: %e \n", tim);
         mf = (2.0*i) / (tim*1000000.0);
         fprintf(stdout, "   N=%8d, time=%e, MFLOPS=%.2f\n", i, tim, mf);
 
-        fprintf(stdout, "---------------------------------------\n");
-        fprintf(stdout, "\n");
+        // fprintf(stdout, "---------------------------------------\n");
+        // fprintf(stdout, "\n");
         free(time_array);
     }
     fprintf(stdout, "DONE\n");
-
-
-
-
-
     return(0);
 }
