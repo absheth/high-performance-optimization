@@ -44,12 +44,17 @@ int GetFlags(int nargs, char **args) /* RETURNS: # of mflops to perform */
 
 int main(int nargs, char **args)
 {
+    
+    printf("\n");
     int mflop, i;
     double dum[16];
     double mf, pcPeak;
 
     mflop = GetFlags(nargs, args);
-    for (i=0; i < 16; i++)
+    /*
+    TODO Why 16?
+    */
+    for (i=0; i < 16; i++) 
         dum[i] = 0.0;
 #if 0
     if (nargs > 1)
@@ -60,4 +65,6 @@ int main(int nargs, char **args)
 
     pcPeak = 100.0*(mf / (SparcMhz*2.0));
     printf("Peak mflop = %.2f (%.2f percent of peak)\n", mf, pcPeak);
+    
+    printf("\n");
 }

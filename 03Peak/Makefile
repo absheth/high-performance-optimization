@@ -10,7 +10,7 @@ xpktime : $(objs)
 pktime.o : pktime.c
 	$(CC) $(CCFLAGS) -DSparcMhz=$(MHZ) -o $@ -c pktime.c
 GetMflop.o : GetMflop.c
-	$(CC) $(CCFLAGS) -o $@ -c GetMflop.c 
+	$(CC) $(CCFLAGS) -o $@ -c GetMflop.c
 GetCycleCount.o : GetCycleCount.S
 	$(ASM) -DUSEWALL=1 -DSparcMhz=$(MHZ) GetCycleCount.S
 
@@ -18,4 +18,4 @@ GetMflop.s : GetMflop.c
 	$(CC) $(CCFLAGS) -o $@ -S GetMflop.c
 
 clean :
-	rm -f $(objs)
+	rm -f $(objs) GetMflop.s xpktime
