@@ -18,4 +18,4 @@ GetMflop.s : GetMflop.c
 	$(CC) $(CCFLAGS) -o $@ -S GetMflop.c
 
 clean :
-	rm -f $(objs) xpktime
+	rm -f $(objs) xpktime GetMflop.s
