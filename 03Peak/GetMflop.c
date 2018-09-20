@@ -2,7 +2,7 @@ long long GetCycleCount(void);
 double ClickToSec(long long clicks);
 
 double GetMflop(int mflop, double *dum) {
-    const int nsize = 140;
+    const int nsize = 168;
     const int lflops = 2*nsize;  /* flops performed in your loop */
     long long t0, t1;
     int nrep;
@@ -118,7 +118,7 @@ double GetMflop(int mflop, double *dum) {
             /* if (c == 5) {
                exit(1);    
                } */
-        } while (j!=nsize);
+        } while (j!=(nsize-(14*2)));
 
 
 
@@ -161,37 +161,36 @@ double GetMflop(int mflop, double *dum) {
         s6 = y10 + y11;
         s7 = y12 + y13;
 
-
         r1 = s1 + s6;
         r2 = s2 + s5;
         r3 = s3 + s4;
-        /* s1 += s6;
-        s2 += s5;
-        s3 += s4;
-        s1 += s7; */;
+        
         r4 = r1 + r2;
         r1 = r3 + s7;
-
-        res += r1 + r4;
+        
+        r1 += r4;
+        res += r1;
         /* res += s1+s2; */
         /* res += y0 + y1 + y2 + y3 + 
             y4 + y5 + y6 + y7 + 
             y8 + y9 + y10 + y11 + 
             y12+ y13; */
-        y0 = 0; 
-        y1 = 0; 
-        y2 = 0; 
-        y3 = 0; 
-        y4 = 0; 
-        y5 = 0; 
-        y6 = 0; 
-        y7 = 0; 
-        y8 = 0; 
-        y9 = 0; 
-        y10 = 0; 
-        y11 = 0; 
-        y12 = 0; 
-        y13 = 0; 
+            
+            
+        y0  *= 0.0; 
+        y1  *= 0.0; 
+        y2  *= 0.0; 
+        y3  *= 0.0; 
+        y4  *= 0.0; 
+        y5  *= 0.0; 
+        y6  *= 0.0; 
+        y7  *= 0.0; 
+        y8  *= 0.0; 
+        y9  *= 0.0; 
+        y10 *= 0.0; 
+        y11 *= 0.0; 
+        y12 *= 0.0; 
+        y13 *= 0.0; 
         /* printf("res: %e\n", res);
         if (i == nrep-100) {
             exit(1);    
