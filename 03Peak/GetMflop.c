@@ -9,16 +9,14 @@ double GetMflop(int mflop, double *dum) {
     register int i;
     nrep = (mflop * 1000000 + lflops-1)/lflops;
     /* double X[nsize], Y[nsize]; */
-    double *Xj, *Yj;
     if (nrep<1) nrep=1;
     register double res = 0.0;
-
     register double x0, x1, x2, x3, x4, x5, x6, x7;
     register double y0, y1, y2, y3, y4, y5, y6, y7;
     register double s1=0.0, s2=0.0, s3=0.0, s4=0.0;
     register double r1=0.0, r2=0.0;
     register int j=0;
-    register int f=0; 
+    register int f=0; /* Just for verifying iterations */ 
     int c=nsize-8;
     /* printf("c: %d\n", c); */
     t0 = GetCycleCount();
