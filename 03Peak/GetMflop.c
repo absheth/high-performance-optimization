@@ -20,7 +20,7 @@ double GetMflop(int mflop, double *dum) {
     register int j=0;
     register int f=0; 
     int c=nsize-8;
-    printf("c: %d\n", c); 
+    /* printf("c: %d\n", c); */
     t0 = GetCycleCount();
     for (i=nrep; i; i--) {
 
@@ -36,6 +36,14 @@ double GetMflop(int mflop, double *dum) {
         x7  = 0.18*0.22;
         j+=8;
         f++;
+        /* printf("x0: %e, f: %d, y0: %e\n", x0,  f, y0);
+        printf("x1: %e, f: %d, y1: %e\n", x1,  f, y1);
+        printf("x2: %e, f: %d, y2: %e\n", x2,  f, y2);
+        printf("x3: %e, f: %d, y3: %e\n", x3,  f, y3);
+        printf("x4: %e, f: %d, y4: %e\n", x4,  f, y4);
+        printf("x5: %e, f: %d, y5: %e\n", x5,  f, y5);
+        printf("x6: %e, f: %d, y6: %e\n", x6,  f, y6);
+        printf("x7: %e, f: %d, y7: %e\n", x7,  f, y7); */
         do {
             y0 += x0; x0 = 0.32*0.55;
             y1 += x1; x1 = 0.22*1.55;
@@ -77,7 +85,7 @@ double GetMflop(int mflop, double *dum) {
         
         j += 8; 
         f++;
-        /*printf("x0: %e, f: %d, y0: %e\n", x0,  f, y0);
+        /* printf("x0: %e, f: %d, y0: %e\n", x0,  f, y0);
         printf("x1: %e, f: %d, y1: %e\n", x1,  f, y1);
         printf("x2: %e, f: %d, y2: %e\n", x2,  f, y2);
         printf("x3: %e, f: %d, y3: %e\n", x3,  f, y3);
@@ -111,16 +119,15 @@ double GetMflop(int mflop, double *dum) {
         /* printf("res: %e\n", res); 
         if (i == nrep-100) {
             exit(1);    
-        }*/
+        } */
 
         
     }
     
-    printf("f: %d\n", f);
+    /* printf("f: %d\n", f);*/
 
     printf("res: %e\n", res); 
     t1 = GetCycleCount();
-    printf("t1: %lld\n", t1);
 
     return(nrep*1.0e-6*lflops/ClickToSec(t1-t0));
 }
